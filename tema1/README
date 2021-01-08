@@ -1,0 +1,108 @@
+										 
+						TEMA 1 : ROUTER								 
+					PROTOCOALE DE COMUNICATIE						 
+					  CIUDIN ANTONELA 325CB							 
+																	 
+	Pentru inceput, am creat o tabela de rutare, in calitate de 		 
+variabila globala. Am apelat functia read_rtable, in care am deschis 	 
+fisierul cu functia fopen, am citit cu functia getline (am gasit-o pe 	 
+net :) ), care citeste o linie din fisier si returneaza dimensiunea		 
+acesteia in octeti. Am citit atata timp cat dimensiunea respectiva		 
+este mai mare sau egala cu 0. Pentru a separa linia prin spatii, am 	 
+olosit strtok, in functia tokenizer, care creaza un tabel de 4 			 
+string-uri cu prefixul, next-hop-ul, masca si interfata. Le-am 			 
+convertit cu functia predefinita inet_addr si le-am adaugat in tabela 	 
+de rutare. Functia returneaza dimensiunea tabelei, la fel setata ca 	 
+variabila globala.														 
+																		 
+	Am sortat tabela cu qsort, cresactor dupa prefix, iar in caz de 	 
+egalitate, crescator dupa masca.										 
+																		 
+	Apoi mi-am creat o coada goala, care urmeaza sa fie populata cu 	 
+pachete in asteptare.													 
+																		 
+	Imediat ce primesc pachetul, cu functia get_packet, tot in main,	 
+in interiorul while-ului are loc analiza si dirijarea acestuia.			 
+																		 
+	O data ce stabliesc ca este un packet de tip IP, urmez pasii din 	 
+laboratorul 4. Ii extrag header-ul de IP, verific checksum-ul  (am 		 
+preluat functia ip_checksum din scheletul laboratorului 4), verific 	 
+TTL-ul, determin cea mai buna ruta din tabela de rutare pentru 			 
+destinatia acestuia, apeland functia get_best_route, determin adresa 	 
+MAC destinatie din tabela ARP, cu ajutorul functiei get_arp_entry, ii 	 
+setez adresele MAC si il transmit mai departe. 							 
+																		 
+	Daca TTL-ul este expirat, creez un packet ICMP cu ajutorul 			 
+functiei init_icmp_packet, unde ii transmit tipul ICMP-ului si 			 
+pachetul original, in functie completez header-ul de ETHERNET, IP 		 
+si ICMP, apoi returnez pachetul ICMP inapoi in main si il trimit cu 	 
+ajutorul functiei send_packet.											 
+																		 
+	Daca nu gasesc ruta pentru destinatia pachetului, creez un pachet 	 
+ICMP de tip ICMP_TIME_EXCEEDED, dupa pasii de la TTL expirat. 			 
+																		 
+	Daca primesc un pachet de tip ECHO si destinatia acestuia sunt 		 
+chiar eu, creez un pachet ICMP, exact ca la pasii anteriori, setand ca 	 
+tip ICMP_ECHOREPLY.														 
+																		 
+	Daca nu exista intrare in tabela ARP, pastrez interfata celei mai 	 
+bune rute, pentru a sti pe unde il trimit data viitoare, creez o copie 	 
+a pachetului original, il adaug in coada de asteptare (am utilizat 		 
+functiile pentru coada, din schelet), si creez un pachet ARP de tip 	 
+REQUEST, apeland functia init_arp_packet. Aceasta primeste ca 			 
+parametru, tipul pachetului (REQUEST sau REPLY), pachetul original si 	 
+o adresa IP ce reprezinta destinatia care trebuie setata in pachet. 	 
+In fucntie extrag header-ele ETHERNET, ARP si le completez. Returnez 	 
+in main pachetul ARP creat si il trimit prin interfata celei mai bune 	 
+rute.																	 
+																		 
+	Daca e un pachet de tip ARP, extrag header-ul de ARP. 				 
+																		 
+	Daca e REQUEST si adresa IP cautata imi apartine, creez un pachet 	 
+ARP REPLY, completand adresele surse IP si MAC, cu adresele mele, iar 	 
+adresele destinatie le completez cu adresele sursa a pachetului primit.  
+Apoi il returnez si il trimit in main.									 
+																		 
+	Daca e REPLY, inseamna ca am primit raspuns la cererea care am 		 
+trimis-o tot eu, deci pot completa tabela ARP care e declarata ca 		 
+variabila globala, la fel ca si dimensiunea acesteia. Apelez functia 	 
+add_to_arp_table, care verifica initial daca elementul nu exista deja 	 
+in tabela. In caz ca tabela e goala, se aloca memorie pentru un 		 
+singura celula, daca nu e goala se realoca memorie la fel pentru inca 	 
+o celula, pentru a nu folosi prea multa memorie si adaug intrarea in 	 
+tabela. Apoi atata timp cat coada de pachete in asteptare mai are 		 
+elemente, extrag cate un pachet, ii setez adresa MAC sursa ca fiind 	 
+adresa interfetei mele, adresa destinatie MAC o completez cu adresa 	 
+obtinuta din pachetul ARP REPLY primit. Trimit pachetul si procedez la 	 
+fel cu celelalte pachete din coada.										 
+																		
+																		 
+Functii ajutatoare:														 
+																		 
+	cmpfunc		  => functia de comparatie utilizata la qsort, compara 	 
+			   		 crescator.											 
+																		 
+	ip_to_arr	  => trnsforma un IP de tip uint32_t intr-un array cu 	 
+				 	 elemente de tip __uint8_t. Folosita pentru 		 
+					 completarea campurilor spa si tpa din header-ul 	 
+					 de ARP. 											 
+																		 
+	arr_to_ip	  => efectueaza operatia inversa. Folosita pentru 		 
+					 conversia campurilor spa si tpa, in uint32_t, 		 
+					 pentru a putea fi procesate.						 
+																		 
+	tokenizer	  => separa un string in array de string-uri dupa 		 
+					 spatiu.											 
+																		 
+	exist_in_ar	  => returneza true daca in tabela ARP exista o intrare  
+					 cu IP-ul si MAC-ul primite ca parametru.			 
+																		 
+	binary_search => functia de cautare binara. Atunci cand gaseste		 
+					 elementul din tabela de rutare care satisface		 
+					 conditia (prefix = masca & ip-ul cautat), cauta 	 
+					 in stanga pana nu se mai satisface conditia, 		 
+					 deoarece pot fi ratate si alte valori care la 		 
+					 fel satisfac conditia, apoi se cauta la dreapta, 	 
+					 pana conditia e satisfacuta, pentru a gasi cea 	 
+					 mai mare masca.									 
+																		 
