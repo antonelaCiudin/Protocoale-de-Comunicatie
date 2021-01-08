@@ -1,0 +1,61 @@
+										 
+			TEMA 3 : Client Web. Comunicatie cu REST API.							 
+					PROTOCOALE DE COMUNICATIE						 
+					  CIUDIN ANTONELA 325CB
+
+	Pentru realizarea temei respective am creat un fisier client.c si un 
+	Makefile corespunzator. De asemenea am utilizat si fisierele ajutatoare 
+	din laboratorul 10, precum si scheletul acestuia.
+
+	Odata ce programul ruleaza, se citeste comanda de la tastatura 
+	(register, login etc.).
+
+	Pentru register si login, procesul e asemanator. Se apeleaza functia care 
+	citeste de tastatura username si password. Se creeaza un obiect json, 
+	utilizandu-se functiile din biblioteca parson. Utilizarea acesteia este 
+	determinata de sugestia din enuntul temei, precum si comoditatea ei. Obiectul 
+	este returnat, convertit in string si trimis ca parametru in functia 
+	sendPostMessage. 
+
+	Functiile sendPostMessage, sendGetMessage si 
+	sendDeleteMessage functioneaza la fel:
+	- se primesc parametrii necesari pentru crearea mesajului
+	- se deschide un socket (ip-ul l-am aflat ruland comanda 
+	  "dig +short ec2-3-8-116-10.eu-west-2.compute.amazonaws.com", iar portul 
+	  a fost oferit in enunt)
+	- se creeaza mesajul completat corespunzator
+	- se trimite la server
+	- se primeste raspunsul de la server
+	- se afiseaza raspunsul
+	- se inchide conexiunea cu serverul
+	- se returneaza raspunsul
+
+	In cazul comenzii "login", se extrage din raspunsul serverului, cookie-ul 
+	care va fi util in continuare pentru demonstrarea faptului ca clientul este 
+	logat, in caz ca cookie va fi NULL, clientul nu e logat si se va afisa un 
+	mesaj corespunzator.
+
+	Cand se primeste comanda enter_library, se trimite mesaj cu cookie-ul de la 
+	pasul anterior, apoi se extrage token-ul, care va demonstra autentificarea 
+	clientului, respectiv accesul acestuia la biblioteca.
+
+	Comenzile get_book si get_books, functioneaza in felul urmator:
+	- se verifica cookie si token sa nu fie NULL
+	- pentru get_book, se apeleaza functia getURL care citeste id-ul de la 
+	  tastatura si il alipeste la url.
+	- se trimite mesajul de tip GET.
+
+	La primirea comenzii add_book:
+	- se apeleaza functia care citeste de la tastatura informatia despre carte.
+	- se transforma intr-un obiect json, apoi in string si se returneaza.
+	- se transforma obiectul in string.
+	- se trimite un mesaj de tip POST cu informatia despre cartea noua.
+
+	Pentru comanda delete_book, a fost necesara adaugarea unei functii noi in 
+	fisierul requests.c din laborator, care creeaza un mesaj cu tipul DELETE. 
+	Se citeste id-ul de la tastatura si se trimite mesajul la server.
+	Pentru comanda logout, se trimite un mesaj de tip GET, apoi se seteaza 
+	cookie si token pe NULL, pentru a putea fi evaluate erorile de logare si 
+	de autentificare.
+
+	Comanda exit, se opreste bucla.
